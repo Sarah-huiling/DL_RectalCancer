@@ -127,40 +127,33 @@ def ODIR_Metrics(pred, target):
     pr = pred.flatten()
 
     gt1 = gt[0::2]
-    pr1 = pr[0::2]
+    pr_neg = pr[0::2]  # pr_neg
     gt2 = gt[1::2]
-    pr2 = pr[1::2]
-    pr_pos = []  #
-    pr_neg = []  #
-    # for i in range(len(gt)):
-    #     if gt[i] == 1:
-    #         pr_pos.append(pr[i])
-    #     if gt[i] == 0:
-    #         pr_neg.append(pr[i])
-    gt2_preLabel = []
+    pr_pos = pr[1::2]   # pr_pos
+
+    gt_prePob = []
     for i in range(len(gt2)):
-        if float(pr2[i]) >= 0.5:
-            gt2_preLabel.append(gt2[i])
-        else:
-            gt2_preLabel.append(gt1[i])
-        if abs(int(gt2[i]) - 1) == 0:
-            pr_pos.append(pr2[i])
-            pr_neg.append(pr1[i])
-        else:
-            pr_pos.append(pr1[i])
-            pr_neg.append(pr2[i])
+        if gt2[i] == 1:
+            gt_prePob.append(pr_pos[i])
+        if gt2[i] == 0:
+            gt_prePob.append(pr_neg[i])
+    preLabel = np.zeros(len(gt2))
+    preLabel[pr_pos > th] = 1
+
     print('=' * 20)
     print('gt2.shape', gt2.shape)
-    print('pr2.shape', pr2.shape)
-    print('pr_pos.shape', len(pr_pos))
-    # print('gt2', gt2)
-    # print('pr2', pr2)
-    # print('pr_pos', pr_pos)
-    fpr, tpr, thresholds = mt.roc_curve(gt2, pr_pos, pos_label=1.0)  #
-    roc_auc2 = mt.auc(fpr, tpr)
-    print("auc:", roc_auc2, 'acc:', mt.accuracy_score(gt2, gt2_preLabel))
+    print('pr2.shape', pr_pos.shape)
+    # print('pr_pos.shape', len(pr_pos))
+    # fpr, tpr, thresholds = mt.roc_curve(gt2, pr_pos, pos_label=1.0)  # 
+    # roc_auc2 = mt.auc(fpr, tpr)
 
-    return roc_auc2, gt2, pr2, pr_neg, pr_pos
+    kappa = mt.cohen_kappa_score(gt, pr > th)
+    print("1：auc,", mt.roc_auc_score(gt1, pr_neg), 'acc:', mt.accuracy_score(gt1, pr_neg > th))
+    print("2：auc,", mt.roc_auc_score(gt2, pr_pos), 'acc:', mt.accuracy_score(gt2, pr_pos > th))
+    # f1 = mt.f1_score(gt, pr > th, average='micro')
+    roc_auc = mt.roc_auc_score(gt2, pr_pos)
+
+    return roc_auc, gt2, gt_prePob, pr_neg, pr_pos
 
 
 def load_label(excelpath, dataformat='csv'):
